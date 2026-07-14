@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[30:00] 番茄鐘</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        usagi: '#FFB7CA', /* 粉紅兔兔 - 櫻花粉 */
+                        usagiLight: '#FFD1DC',
+                        piske: '#FFF9E6', /* P助 - 淡黃色 */
+                        choco: '#5D4037', /* 文字與線條 - 溫暖深咖啡 */
+                        chocoLight: '#795548',
+                        bgSoft: '#FFF0F5', /* 背景底色 */
+                    },
+                    fontFamily: {
+                        // 使用圓潤可愛的字體組合
+                        sans: ['"M PLUS Rounded 1c"', 'Nunito', 'Microsoft JhengHei', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'cute': '0 10px 25px -5px rgba(255, 183, 202, 0.4), 0 8px 10px -6px rgba(255, 183, 202, 0.1)',
+                        'btn': '0 6px 0 0 #D898AA', /* 按鈕立體陰影 */
+                        'btn-hover': '0 4px 0 0 #D898AA',
+                        'btn-active': '0 0px 0 0 #D898AA',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #FFF0F5; /* 淡淡的粉紅背景 */
+            background-image: radial-gradient(#FFD1DC 2px, transparent 2px);
+            background-size: 30px 30px; /* 可愛圓點背景 */
+            color: #5D4037;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* 卡片主要樣式 */
+        .pomodoro-card {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 4px solid #FFB7CA;
+            border-radius: 40px;
+            box-shadow: 0 15px 35px rgba(255, 183, 202, 0.3);
+            position: relative;
+            z-index: 10;
+        }
+
+        /* 圓潤立體按鈕 */
+        .cute-btn {
+            border: 3px solid #5D4037;
+            border-radius: 30px;
+            transition: all 0.15s ease-in-out;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .cute-btn-primary {
+            background-color: #FFB7CA;
+            box-shadow: 0 6px 0 0 #D898AA;
+        }
+        
+        .cute-btn-primary:hover {
+            transform: translateY(2px);
+            box-shadow: 0 4px 0 0 #D898AA;
+            background-color: #FFC4D4;
+        }
+
+        .cute-btn-primary:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 0 #D898AA;
+        }
+
+        .cute-btn-secondary {
+            background-color: #FFF9E6;
+            box-shadow: 0 6px 0 0 #E5D6A3;
+        }
+
+        .cute-btn-secondary:hover {
+            transform: translateY(2px);
+            box-shadow: 0 4px 0 0 #E5D6A3;
+            background-color: #FFFDF0;
+        }
+
+        .cute-btn-secondary:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0 0 #E5D6A3;
+        }
+
+        /* 時間顯示特效 */
+        .time-display {
+            font-family: 'Nunito', sans-serif;
+            text-shadow: 3px 3px 0px #FFD1DC;
+            letter-spacing: 4px;
+        }
+
+        /* 角色浮動動畫 */
+        @keyframes float-usagi {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-8px) rotate(-5deg); }
+        }
+        @keyframes float-piske {
+            0%, 100% { transform: translateY(0) rotate(5deg); }
+            50% { transform: translateY(-6px) rotate(5deg); }
+        }
+        .animate-usagi { animation: float-usagi 4s infinite ease-in-out; }
+        .animate-piske { animation: float-piske 4s infinite ease-in-out 1s; }
+
+        /* 左側白色小雞：保留參考圖完整比例，不再套用圓形裁切 */
+        .chicken-character {
+            position: absolute;
+            top: -18px;
+            left: -12px;
+            width: 126px;
+            height: auto;
+            z-index: 20;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        .chicken-character img {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
+        /* 右側粉紅兔子：透明背景角色，取代原本的黃色圓形 */
+        .rabbit-character {
+            position: absolute;
+            top: -20px;
+            right: -18px;
+            width: 145px;
+            height: auto;
+            z-index: 20;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        .rabbit-character img {
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
+        @media (max-width: 420px) {
+            .chicken-character {
+                top: -12px;
+                left: -8px;
+                width: 108px;
+            }
+
+            .rabbit-character {
+                top: -12px;
+                right: -12px;
+                width: 124px;
+            }
+        }
+
+        /* 彈出提示框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 240, 245, 0.8);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: white;
+            border: 4px solid #FFB7CA;
+            border-radius: 30px;
+            padding: 40px;
+            text-align: center;
+            transform: scale(0.8);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 40px rgba(255, 183, 202, 0.4);
+            max-width: 90%;
+            width: 400px;
+        }
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        /* 裝飾性雲朵/對話框 */
+        .speech-bubble {
+            position: absolute;
+            top: -40px;
+            right: -60px;
+            background: white;
+            border: 3px solid #5D4037;
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s;
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 20px;
+            border-width: 8px 8px 0;
+            border-style: solid;
+            border-color: #5D4037 transparent transparent transparent;
+        }
+        .speech-bubble.show {
+            opacity: 1;
+            transform: translateY(0);
+            animation: float 2s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* 進度條 */
+        .progress-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-90deg);
+            width: 280px;
+            height: 280px;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .progress-ring circle {
+            fill: transparent;
+            stroke-width: 12;
+            stroke-linecap: round;
+        }
+        .progress-ring .bg {
+            stroke: #FFF9E6;
+        }
+        .progress-ring .progress {
+            stroke: #FFB7CA;
+            stroke-dasharray: 816; /* 2 * pi * r (130) */
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <main class="pomodoro-card w-full max-w-md p-8 pt-10 mx-4 flex flex-col items-center">
+        
+        <div class="text-center w-full relative py-8 mt-4">
+            
+            <!-- 左側白色小雞：直接使用使用者提供的參考原圖，完整保留造型與比例 -->
+            <div class="chicken-character animate-usagi">
+                <img src="white_chicken_transparent.png" alt="白色小雞">
+            </div>
+
+            <!-- 右側粉紅兔子：已移除黃色背景並以透明 PNG 呈現 -->
+            <div class="rabbit-character animate-piske">
+                <img src="pink_rabbit_transparent.png" alt="粉紅色兔子">
+            </div>
+
+            <!-- 圓形進度條 -->
+            <svg class="progress-ring">
+                <circle class="bg" cx="140" cy="140" r="130"></circle>
+                <circle class="progress" id="progress-circle" cx="140" cy="140" r="130"></circle>
+            </svg>
+
+            <!-- 標題 -->
+            <h1 class="text-2xl font-bold text-choco mb-2 relative z-10">專注時間</h1>
+            
+            <!-- 時間顯示改為可輸入的 input -->
+            <input type="text" id="time-display" class="time-display text-7xl font-extrabold text-choco my-8 relative z-10 w-full bg-transparent border-none outline-none text-center focus:outline-none" value="30:00">
+        </div>
+
+        <!-- 控制按鈕 -->
+        <div class="flex gap-4 w-full mt-4 justify-center relative z-10">
+            <button id="start-btn" class="cute-btn cute-btn-primary flex-1 py-4 text-choco text-lg flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                開始
+            </button>
+            <button id="pause-btn" class="cute-btn cute-btn-secondary flex-1 py-4 text-choco text-lg flex items-center justify-center gap-2 hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                暫停
+            </button>
+            <button id="reset-btn" class="cute-btn cute-btn-secondary px-6 py-4 text-choco flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- 快速設定與調整區塊 -->
+        <div class="flex flex-wrap gap-2 w-full mt-6 justify-center relative z-10">
+            <button id="btn-10m" class="cute-btn cute-btn-secondary px-3 py-2 text-choco text-sm font-bold">10分鐘</button>
+            <button id="btn-30m" class="cute-btn cute-btn-secondary px-3 py-2 text-choco text-sm font-bold">30分鐘</button>
+            <button id="btn-60m" class="cute-btn cute-btn-secondary px-3 py-2 text-choco text-sm font-bold">1小時</button>
+        </div>
+    </main>
+
+    <!-- 時間到提醒 Modal -->
+    <div id="alert-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="text-6xl mb-4">🐰🐥</div>
+            <h2 class="text-3xl font-bold text-choco mb-4">時間到囉！</h2>
+            <p class="text-lg text-chocoLight mb-8 font-medium">
+                辛苦了！<br>
+                該站起來喝水、走動一下囉！🌸
+            </p>
+            <button id="close-modal-btn" class="cute-btn cute-btn-primary w-full py-3 text-choco text-lg">
+                我知道了！
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- 常數與變數設定 ---
+            let currentTotalTime = 30 * 60; // 目前設定的總時間 (秒)
+            let timeLeft = currentTotalTime;
+            let timerId = null;
+            let isRunning = false;
+            let audioContext = null; // Web Audio API Context
+
+            // --- DOM 元素 ---
+            const timeDisplay = document.getElementById('time-display');
+            const startBtn = document.getElementById('start-btn');
+            const pauseBtn = document.getElementById('pause-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const progressCircle = document.getElementById('progress-circle');
+            const alertModal = document.getElementById('alert-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+
+            // 快速設定按鈕
+            const btn10m = document.getElementById('btn-10m');
+            const btn30m = document.getElementById('btn-30m');
+            const btn60m = document.getElementById('btn-60m');
+
+            // --- SVG 圓環進度條設定 ---
+            const circleRadius = progressCircle.r.baseVal.value;
+            const circumference = circleRadius * 2 * Math.PI;
+            progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+            progressCircle.style.strokeDashoffset = 0;
+
+            function setProgress(percent) {
+                const offset = circumference - (percent / 100) * circumference;
+                progressCircle.style.strokeDashoffset = offset;
+            }
+
+            // --- 音效合成 (Web Audio API) ---
+            function playNotificationSound() {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                const now = audioContext.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                
+                notes.forEach((freq, index) => {
+                    const osc = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + (index * 0.15));
+                    gainNode.gain.setValueAtTime(0, now + (index * 0.15));
+                    gainNode.gain.linearRampToValueAtTime(0.3, now + (index * 0.15) + 0.05);
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, now + (index * 0.15) + 1.5);
+                    osc.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    osc.start(now + (index * 0.15));
+                    osc.stop(now + (index * 0.15) + 1.5);
+                });
+            }
+
+            // --- 瀏覽器通知 (Web Notification API) ---
+            function requestNotificationPermission() {
+                if ("Notification" in window) {
+                    if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                        Notification.requestPermission();
+                    }
+                }
+            }
+
+            function showBrowserNotification() {
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification("🐰 番茄鐘時間到囉！", {
+                        body: "辛苦了！該站起來喝水、走動一下囉！🌸",
+                        icon: "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐰</text></svg>"
+                    });
+                }
+            }
+
+            // --- 更新 UI ---
+            function updateDisplay() {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                
+                const minStr = minutes.toString().padStart(2, '0');
+                const secStr = seconds.toString().padStart(2, '0');
+                const timeString = `${minStr}:${secStr}`;
+                
+                timeDisplay.value = timeString;
+                
+                if (isRunning) {
+                    document.title = `[${timeString}] 專注中... | 番茄鐘`;
+                } else if (timeLeft === 0) {
+                    document.title = `時間到！ | 番茄鐘`;
+                } else {
+                    document.title = `[${timeString}] 番茄鐘`;
+                }
+
+                const percent = (timeLeft / currentTotalTime) * 100;
+                setProgress(percent);
+            }
+
+            // --- 計時器邏輯 ---
+            function timerTick() {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateDisplay();
+                } else {
+                    clearInterval(timerId);
+                    isRunning = false;
+                    updateButtons();
+                    playNotificationSound();
+                    showBrowserNotification();
+                    alertModal.classList.add('active');
+                }
+            }
+
+            function startTimer() {
+                if (!isRunning && timeLeft > 0) {
+                    if (!audioContext) {
+                        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    isRunning = true;
+                    timerId = setInterval(timerTick, 1000);
+                    updateButtons();
+                    requestNotificationPermission();
+                    updateDisplay();
+                }
+            }
+
+            function pauseTimer() {
+                if (isRunning) {
+                    clearInterval(timerId);
+                    isRunning = false;
+                    updateButtons();
+                    updateDisplay();
+                }
+            }
+
+            function resetTimer() {
+                clearInterval(timerId);
+                isRunning = false;
+                timeLeft = currentTotalTime;
+                updateDisplay();
+                updateButtons();
+            }
+
+            function setCustomTime(minutes) {
+                currentTotalTime = minutes * 60;
+                resetTimer();
+            }
+
+            // 處理手動輸入時間的邏輯
+            function handleTimeInput() {
+                let val = timeDisplay.value.trim();
+                let match = val.match(/^(\d+)(?::(\d{1,2}))?$/);
+                
+                if (match) {
+                    let mins = parseInt(match[1], 10);
+                    let secs = match[2] ? parseInt(match[2], 10) : 0;
+                    let totalSecs = mins * 60 + secs;
+                    
+                    if (totalSecs > 0) {
+                        currentTotalTime = totalSecs;
+                        resetTimer();
+                        return;
+                    }
+                }
+                
+                updateDisplay();
+            }
+
+            function updateButtons() {
+                if (isRunning) {
+                    startBtn.classList.add('hidden');
+                    pauseBtn.classList.remove('hidden');
+                } else {
+                    startBtn.classList.remove('hidden');
+                    pauseBtn.classList.add('hidden');
+                }
+            }
+
+            // --- 事件監聽 ---
+            startBtn.addEventListener('click', startTimer);
+            pauseBtn.addEventListener('click', pauseTimer);
+            resetBtn.addEventListener('click', resetTimer);
+            
+            btn10m.addEventListener('click', () => setCustomTime(10));
+            btn30m.addEventListener('click', () => setCustomTime(30));
+            btn60m.addEventListener('click', () => setCustomTime(60));
+
+            timeDisplay.addEventListener('focus', () => {
+                if (isRunning) timeDisplay.blur();
+            });
+            timeDisplay.addEventListener('blur', handleTimeInput);
+            timeDisplay.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') timeDisplay.blur();
+            });
+
+            closeModalBtn.addEventListener('click', () => {
+                alertModal.classList.remove('active');
+                resetTimer();
+            });
+
+            // 初始化畫面
+            updateDisplay();
+        });
+    </script>
+</body>
+</html>
